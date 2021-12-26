@@ -1,6 +1,6 @@
 import io from "socket.io-client";
 import readline from "readline";
-import Peer from "simple-peer";
+import Peer, { SignalData } from "simple-peer";
 //@ts-ignore
 import wrtc from "wrtc";
 
@@ -8,19 +8,26 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
+type Payload = {
+  // SignalData -> type:enum{answer,offer} sdp
+  signal: SignalData;
+  callerID: string;
+};
+
 function connect() {
   const socket = io("http://localhost:8000");
+  console.log("Socket connected");
+
   let peer: Peer.Instance;
+  let connection = false;
   socket.emit("join room", () => {});
-  socket.on("all users", (users) => {
+  socket.on("all users", (users: string[]) => {
     peer = createPeer(users[0], socket.id);
   });
-  socket.on("user joined", (payload) => {
-    console.log("user joined");
+  socket.on("user joined", (payload: Payload) => {
     peer = addPeer(payload.signal, payload.callerID);
   });
-  socket.on("receiving returned signal", (payload) => {
-    console.log("receiving returned signal");
+  socket.on("receiving returned signal", (payload: Payload) => {
     peer.signal(payload.signal);
   });
   socket.on("room full", () => {
@@ -29,52 +36,58 @@ function connect() {
   socket.on("user left", () => {
     console.log("Peer disconnected");
     peer.destroy();
+    createPeer("", socket.id);
   });
-  rl.on("line", (message) => {
-    console.log(peer.connected);
-    if (peer.connected === true) {
+
+  rl.on("line", (message: string) => {
+    if (connection === true) {
       peer.write(message);
+    } else {
+      console.log(
+        "Please wait for the connection, you will be notified when other peer joined"
+      );
     }
   });
-  function createPeer(userToSignal: any, callerID: string) {
+
+  function createPeer(userToSignal: string, callerID: string) {
     const peer = new Peer({
       initiator: true,
       trickle: false,
       wrtc: wrtc,
     });
-    peer.on("signal", (signal) => {
+    peer.on("signal", (signal: Peer.SignalData) => {
       socket.emit("sending signal", { userToSignal, callerID, signal });
     });
-    peer.on("data", (data) => {
-      let buf = Buffer.from(data);
-      console.log(`Peer: ${buf.toString()}`);
+    peer.on("connect", () => {
+      connection = true;
+      console.log("Other user connected");
     });
-    peer.on("close", () => {
-      console.log("Closed");
-      peer.destroy();
-    });
+    peer.on("data", handleData);
     return peer;
   }
-  function addPeer(incomingSignal: any, callerID: string) {
+  function addPeer(incomingSignal: Peer.SignalData, callerID: string) {
     const peer = new Peer({
       initiator: false,
       trickle: false,
       wrtc: wrtc,
     });
-    peer.on("signal", (signal) => {
+
+    peer.on("signal", (signal: Peer.SignalData) => {
       socket.emit("returning signal", { signal, callerID });
     });
-    peer.on("data", (data) => {
-      let buf = Buffer.from(data);
-      console.log(`Peer: ${buf.toString()}`);
-    });
 
-    peer.on("close", () => {
-      console.log("Closed");
-      peer.destroy();
+    peer.on("connect", () => {
+      connection = true;
+
+      console.log("Other user connected");
     });
+    peer.on("data", handleData);
     peer.signal(incomingSignal);
     return peer;
+  }
+  function handleData(data: Buffer) {
+    let buf = Buffer.from(data);
+    console.log(`Peer: ${buf.toString()}`);
   }
 }
 connect();
