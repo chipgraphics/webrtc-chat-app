@@ -1,12 +1,8 @@
 import io from "socket.io-client";
-import { Command } from "commander";
 import readline from "readline";
 import Peer from "simple-peer";
 //@ts-ignore
 import wrtc from "wrtc";
-//import Buffer from "buffer/";
-const program = new Command();
-program.version("0.0.1");
 
 const rl = readline.createInterface({
   input: process.stdin,
