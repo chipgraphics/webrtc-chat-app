@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import socketio, { Socket } from "socket.io";
 import dotenv from "dotenv";
+
 const app = express();
 
 dotenv.config({ path: __dirname + "/../.env" });
@@ -13,33 +14,31 @@ app.use(express.json());
 
 const io = new socketio.Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:4200",
   },
 });
 
 const users: string[] = [];
 io.on("connection", (socket: Socket) => {
-  socket.on("join room", () => {
+  socket.on("connectServer", () => {
     const length = users.length;
     if (length === 2) {
-      socket.emit("room full");
+      socket.emit("peerisExist");
       return;
     }
     users.push(socket.id);
-    const usersInThisRoom = users.filter((id) => id !== socket.id);
+    const otherUser = users.filter((id) => id !== socket.id);
 
-    socket.emit("all users", usersInThisRoom);
+    socket.emit("otherUser", otherUser);
   });
-  console.log(`New connection, socket-id: ${socket.id}`);
-
-  socket.on("sending signal", (payload) => {
+  socket.on("sendSignal", (payload) => {
     io.to(payload.userToSignal).emit("user joined", {
       signal: payload.signal,
       callerID: payload.callerID,
     });
   });
-  socket.on("returning signal", (payload) => {
-    io.to(payload.callerID).emit("receiving returned signal", {
+  socket.on("returnSignal", (payload) => {
+    io.to(payload.callerID).emit("receiveReturnedSignal", {
       signal: payload.signal,
       id: socket.id,
     });
@@ -49,7 +48,7 @@ io.on("connection", (socket: Socket) => {
     if (index !== -1) {
       users.splice(index, 1);
     }
-    socket.broadcast.emit("user left");
+    socket.broadcast.emit("peerDisconnected");
   });
 });
 server.listen(process.env.PORT, () => {

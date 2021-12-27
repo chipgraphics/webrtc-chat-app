@@ -3,7 +3,6 @@ import readline from "readline";
 import Peer, { SignalData } from "simple-peer";
 //@ts-ignore
 import wrtc from "wrtc";
-import { isConstructorDeclaration } from "typescript";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -15,39 +14,41 @@ type Payload = {
   callerID: string;
 };
 
-function connect() {
+(function () {
   const socket = io("http://localhost:8000");
-  console.log("Socket connected");
+  console.log("Server: Socket connected");
 
   let peer: Peer.Instance;
   let connection = false;
-  socket.emit("join room", () => {});
-  socket.on("all users", (users: string[]) => {
-    peer = createPeer(users[0], socket.id);
-  });
-  socket.on("user joined", (payload: Payload) => {
-    peer = addPeer(payload.signal, payload.callerID);
-  });
-  socket.on("receiving returned signal", (payload: Payload) => {
-    peer.signal(payload.signal);
-  });
-  socket.on("room full", () => {
-    console.log("room is full");
-  });
-  socket.on("user left", () => {
-    console.log("Peer disconnected");
-    peer.destroy();
-    createPeer("", socket.id);
-  });
 
   rl.on("line", (message: string) => {
     if (connection === true) {
       peer.write(message);
     } else {
       console.log(
-        "Please wait for the connection, you will be notified when other peer joined"
+        "Server: Please wait for the connection, you will be notified when other peer joined"
       );
     }
+  });
+
+  socket.emit("connectServer");
+  socket.on("otherUser", (users: string[]) => {
+    peer = createPeer(users[0], socket.id);
+  });
+  socket.on("user joined", (payload: Payload) => {
+    peer = addPeer(payload.signal, payload.callerID);
+  });
+  socket.on("receiveReturnedSignal", (payload: Payload) => {
+    peer.signal(payload.signal);
+  });
+  socket.on("peerisExist", () => {
+    console.log("Server: Peer already exist");
+    process.exit();
+  });
+  socket.on("peerDisconnected", () => {
+    console.log("Server: Peer disconnected");
+    peer.destroy();
+    createPeer("", socket.id);
   });
 
   function createPeer(userToSignal: string, callerID: string) {
@@ -57,11 +58,11 @@ function connect() {
       wrtc: wrtc,
     });
     peer.on("signal", (signal: Peer.SignalData) => {
-      socket.emit("sending signal", { userToSignal, callerID, signal });
+      socket.emit("sendSignal", { userToSignal, callerID, signal });
     });
     peer.on("connect", () => {
       connection = true;
-      console.log("Other peer connected");
+      console.log("Server: Other peer connected");
     });
     peer.on("data", handleData);
     return peer;
@@ -74,12 +75,12 @@ function connect() {
     });
 
     peer.on("signal", (signal: Peer.SignalData) => {
-      socket.emit("returning signal", { signal, callerID });
+      socket.emit("returnSignal", { signal, callerID });
     });
 
     peer.on("connect", () => {
       connection = true;
-      console.log("Other peer connected");
+      console.log("Server: Other peer connected");
     });
     peer.on("data", handleData);
     peer.signal(incomingSignal);
@@ -89,5 +90,4 @@ function connect() {
     let buf = Buffer.from(data);
     console.log(`Peer: ${buf.toString()}`);
   }
-}
-connect();
+})();

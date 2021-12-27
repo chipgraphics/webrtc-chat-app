@@ -12,7 +12,7 @@ export class ChatService implements OnInit {
   private connection = false;
   constructor() {
     this.socket = io('http://localhost:8000');
-    this.socket.emit('join room');
+    this.socket.emit('connectServer');
     this.onSocketConnection().subscribe((peer) => {
       this.peer = peer;
     });
@@ -22,10 +22,12 @@ export class ChatService implements OnInit {
     this.onReceiveSignal().subscribe((signal) => {
       this.peer?.signal(signal);
     });
-    this.socket.on('room full', () => {
-      console.log('room is full');
+    this.socket.on('peerisExist', () => {
+      // ALERT USERR
+
+      console.log('Peer is exist');
     });
-    this.socket.on('user left', () => {
+    this.socket.on('peerDisconnected', () => {
       console.log('Peer disconnected');
       if (this.peer) this.peer.destroy();
 
@@ -46,7 +48,7 @@ export class ChatService implements OnInit {
     });
     peer.on('signal', (signal: Peer.SignalData) => {
       console.log(userToSignal + 'signalevent' + callerID);
-      this.socket.emit('sending signal', { userToSignal, callerID, signal });
+      this.socket.emit('sendSignal', { userToSignal, callerID, signal });
     });
     peer.on('connect', () => {
       this.connection = true;
@@ -61,7 +63,7 @@ export class ChatService implements OnInit {
       trickle: false,
     });
     peer.on('signal', (signal: Peer.SignalData) => [
-      this.socket.emit('returning signal', {
+      this.socket.emit('returnSignal', {
         signal: signal,
         callerID: callerID,
       }),
@@ -76,9 +78,7 @@ export class ChatService implements OnInit {
 
   onSocketConnection() {
     return new Observable<Peer.Instance>((observer) => {
-      this.socket.on('all users', (users: string[]) => {
-        console.log('---all users-');
-        console.log(users);
+      this.socket.on('otherUser', (users: string[]) => {
         observer.next(this.createPeer(users[0], this.socket.id));
       });
     });
@@ -93,7 +93,7 @@ export class ChatService implements OnInit {
   }
   onReceiveSignal() {
     return new Observable<Peer.SignalData>((observer) => {
-      this.socket.on('receiving returned signal', (payload) => {
+      this.socket.on('receiveReturnedSignal', (payload) => {
         console.log(payload.signal);
         observer.next(payload.signal);
       });
