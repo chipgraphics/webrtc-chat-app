@@ -21,7 +21,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   constructor(private chatService: ChatService) {}
 
   ngOnInit(): void {
-    this.chatService.onNewMessage().subscribe((msg) => {
+    this.chatService.getMessage().subscribe((msg) => {
       this.messages.push(`${msg}`);
     });
   }
@@ -29,10 +29,17 @@ export class ChatComponent implements OnInit, AfterViewChecked {
     this.scrollToBottom();
   }
   sendButtonClick() {
+    const connectionState = this.chatService.getConnectionState();
     if (this.msgInput !== '') {
-      this.chatService.sendMessage(this.msgInput);
-      this.messages.push(`You: ${this.msgInput}`);
-      this.msgInput = '';
+      if (connectionState === true) {
+        this.chatService.sendMessage(this.msgInput);
+        this.messages.push(`You: ${this.msgInput}`);
+        this.msgInput = '';
+      } else {
+        this.messages.push(
+          'Server: Please wait for the connection, you will be notified when other peer joined'
+        );
+      }
     }
   }
   scrollToBottom(): void {

@@ -16,7 +16,6 @@ type Payload = {
 
 (function () {
   const socket = io("http://localhost:8000");
-  console.log("Server: Socket connected");
 
   let peer: Peer.Instance;
   let connection = false;
@@ -62,7 +61,7 @@ type Payload = {
     });
     peer.on("connect", () => {
       connection = true;
-      console.log("Server: Other peer connected");
+      console.log("Server: Peer connected");
     });
     peer.on("data", handleData);
     return peer;
