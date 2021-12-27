@@ -10,10 +10,9 @@ dotenv.config({ path: __dirname + "/../.env" });
 const server = http.createServer(app);
 
 app.use(express.json());
-//app.use(express.static("public"));
+
 const io = new socketio.Server(server);
-let userCount = 0;
-const socketToRoom = {};
+
 const users: string[] = [];
 io.on("connection", (socket: Socket) => {
   socket.on("join room", () => {
