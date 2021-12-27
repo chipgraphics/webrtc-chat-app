@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+  </head>
+  <body>
+    <div class="chat">
+      <div class="chat__sidebar"></div>
+      <div class="chat__main">
+        <div
+          #scrollMe
+          style="overflow: scroll; height: xyz"
+          id="messages"
+          class="chat__messages"
+        >
+          <ul
+            *ngFor="let msg of messages; index as i; first as isFirst"
+            class="message"
+          >
+            {{
+              msg
+            }}
+          </ul>
+        </div>
+
+        <div class="compose">
+          <input
+            name="message"
+            placeholder="Mesaj"
+            [(ngModel)]="msgInput"
+            (keydown.enter)="sendButtonClick()"
+          />
+          <button (click)="sendButtonClick()">Gönder</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

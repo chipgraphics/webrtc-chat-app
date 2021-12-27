@@ -3,6 +3,7 @@ import readline from "readline";
 import Peer, { SignalData } from "simple-peer";
 //@ts-ignore
 import wrtc from "wrtc";
+import { isConstructorDeclaration } from "typescript";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -25,9 +26,11 @@ function connect() {
     peer = createPeer(users[0], socket.id);
   });
   socket.on("user joined", (payload: Payload) => {
+    console.log("user joined");
     peer = addPeer(payload.signal, payload.callerID);
   });
   socket.on("receiving returned signal", (payload: Payload) => {
+    console.log("receiving returned signal");
     peer.signal(payload.signal);
   });
   socket.on("room full", () => {
@@ -56,6 +59,8 @@ function connect() {
       wrtc: wrtc,
     });
     peer.on("signal", (signal: Peer.SignalData) => {
+      console.log(userToSignal + callerID);
+
       socket.emit("sending signal", { userToSignal, callerID, signal });
     });
     peer.on("connect", () => {
@@ -73,6 +78,7 @@ function connect() {
     });
 
     peer.on("signal", (signal: Peer.SignalData) => {
+      console.log(incomingSignal + callerID);
       socket.emit("returning signal", { signal, callerID });
     });
 

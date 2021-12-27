@@ -11,7 +11,11 @@ const server = http.createServer(app);
 
 app.use(express.json());
 
-const io = new socketio.Server(server);
+const io = new socketio.Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
 
 const users: string[] = [];
 io.on("connection", (socket: Socket) => {
@@ -30,12 +34,15 @@ io.on("connection", (socket: Socket) => {
   console.log("new connection");
 
   socket.on("sending signal", (payload) => {
+    console.log(`sending signal ${payload.userToSignal}`);
     io.to(payload.userToSignal).emit("user joined", {
       signal: payload.signal,
       callerID: payload.callerID,
     });
   });
   socket.on("returning signal", (payload) => {
+    console.log("returning signal");
+    console.log(`${socket.id}`);
     io.to(payload.callerID).emit("receiving returned signal", {
       signal: payload.signal,
       id: socket.id,
