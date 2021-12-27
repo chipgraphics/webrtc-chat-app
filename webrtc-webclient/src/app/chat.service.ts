@@ -20,7 +20,6 @@ export class ChatService implements OnInit {
       this.peer = peer;
     });
     this.onReceiveSignal().subscribe((signal) => {
-      //@ts-ignore
       this.peer?.signal(signal);
     });
     this.socket.on('room full', () => {
@@ -46,7 +45,7 @@ export class ChatService implements OnInit {
       trickle: false,
     });
     peer.on('signal', (signal: Peer.SignalData) => {
-      console.log();
+      console.log(userToSignal + 'signalevent' + callerID);
       this.socket.emit('sending signal', { userToSignal, callerID, signal });
     });
     peer.on('connect', () => {
@@ -77,7 +76,7 @@ export class ChatService implements OnInit {
 
   onSocketConnection() {
     return new Observable<Peer.Instance>((observer) => {
-      this.socket.on('all user', (users: string[]) => {
+      this.socket.on('all users', (users: string[]) => {
         console.log('---all users-');
         console.log(users);
         observer.next(this.createPeer(users[0], this.socket.id));
@@ -87,19 +86,17 @@ export class ChatService implements OnInit {
   onNewUser() {
     return new Observable<Peer.Instance>((observer) => {
       this.socket.on('user joined', (payload) => {
+        console.log(payload);
         observer.next(this.addPeer(payload.signal, payload.callerID));
       });
     });
   }
   onReceiveSignal() {
-    return new Observable<object>((observer) => {
-      this.socket.on(
-        'receiving returned signal',
-        (signal: any, callerID: string) => {
-          console.log(signal);
-          observer.next(signal);
-        }
-      );
+    return new Observable<Peer.SignalData>((observer) => {
+      this.socket.on('receiving returned signal', (payload) => {
+        console.log(payload.signal);
+        observer.next(payload.signal);
+      });
     });
   }
   onNewMessage() {

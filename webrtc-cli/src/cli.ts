@@ -26,11 +26,9 @@ function connect() {
     peer = createPeer(users[0], socket.id);
   });
   socket.on("user joined", (payload: Payload) => {
-    console.log("user joined");
     peer = addPeer(payload.signal, payload.callerID);
   });
   socket.on("receiving returned signal", (payload: Payload) => {
-    console.log("receiving returned signal");
     peer.signal(payload.signal);
   });
   socket.on("room full", () => {
@@ -59,13 +57,11 @@ function connect() {
       wrtc: wrtc,
     });
     peer.on("signal", (signal: Peer.SignalData) => {
-      console.log(userToSignal + callerID);
-
       socket.emit("sending signal", { userToSignal, callerID, signal });
     });
     peer.on("connect", () => {
       connection = true;
-      console.log("Other user connected");
+      console.log("Other peer connected");
     });
     peer.on("data", handleData);
     return peer;
@@ -78,14 +74,12 @@ function connect() {
     });
 
     peer.on("signal", (signal: Peer.SignalData) => {
-      console.log(incomingSignal + callerID);
       socket.emit("returning signal", { signal, callerID });
     });
 
     peer.on("connect", () => {
       connection = true;
-
-      console.log("Other user connected");
+      console.log("Other peer connected");
     });
     peer.on("data", handleData);
     peer.signal(incomingSignal);

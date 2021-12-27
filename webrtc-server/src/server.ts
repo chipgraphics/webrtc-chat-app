@@ -27,22 +27,18 @@ io.on("connection", (socket: Socket) => {
     }
     users.push(socket.id);
     const usersInThisRoom = users.filter((id) => id !== socket.id);
-    console.log(users);
 
     socket.emit("all users", usersInThisRoom);
   });
-  console.log("new connection");
+  console.log(`New connection, socket-id: ${socket.id}`);
 
   socket.on("sending signal", (payload) => {
-    console.log(`sending signal ${payload.userToSignal}`);
     io.to(payload.userToSignal).emit("user joined", {
       signal: payload.signal,
       callerID: payload.callerID,
     });
   });
   socket.on("returning signal", (payload) => {
-    console.log("returning signal");
-    console.log(`${socket.id}`);
     io.to(payload.callerID).emit("receiving returned signal", {
       signal: payload.signal,
       id: socket.id,
