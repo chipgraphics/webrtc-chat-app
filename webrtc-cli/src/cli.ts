@@ -16,7 +16,7 @@ type Payload = {
 
 (function () {
   const socket = io("http://localhost:8000");
-
+  console.log("Please wait for the connection");
   let peer: Peer.Instance;
   let connection = false;
 
@@ -42,10 +42,10 @@ type Payload = {
   });
   socket.on("peerisExist", () => {
     console.log("Server: Peer already exist");
-    process.exit();
   });
   socket.on("peerDisconnected", () => {
     console.log("Server: Peer disconnected");
+    connection = false;
     peer.destroy();
     createPeer("", socket.id);
   });
@@ -79,7 +79,7 @@ type Payload = {
 
     peer.on("connect", () => {
       connection = true;
-      console.log("Server: Other peer connected");
+      console.log("Server: Peer connected");
     });
     peer.on("data", handleData);
     peer.signal(incomingSignal);

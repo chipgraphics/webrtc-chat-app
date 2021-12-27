@@ -25,7 +25,9 @@ export class ChatService {
       this.peer?.signal(signal);
     });
     this.socket.on('peerisExist', () => {
-      this.msg.next('Server: Peers are already in the app');
+      this.msg.next(
+        'Server: Peers are already in the app, please wait until one of the peer left and refresh the page'
+      );
     });
     this.socket.on('peerDisconnected', () => {
       this.msg.next('Server: Peer disconnected');
@@ -88,6 +90,7 @@ export class ChatService {
   onSocketConnection() {
     return new Observable<Peer.Instance>((observer) => {
       this.socket.on('otherUser', (users: string[]) => {
+        this.msg.next('Server: Please wait for the connection');
         observer.next(this.createPeer(users[0], this.socket.id));
       });
     });
